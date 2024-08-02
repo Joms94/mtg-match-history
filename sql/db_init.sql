@@ -38,12 +38,13 @@ the commander's name and their colour identity.*/
 CREATE TABLE postgres.mtg.dim_commanders (
     commander_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     commander_name VARCHAR(80) NOT NULL,
-    cost SMALLINT NOT NULL,
-    is_white BOOLEAN DEFAULT FALSE,
-    is_blue BOOLEAN DEFAULT FALSE,
-    is_black BOOLEAN DEFAULT FALSE,
-    is_red BOOLEAN DEFAULT FALSE,
-    is_green BOOLEAN DEFAULT FALSE
+    cost SMALLINT,
+    white_pips SMALLINT DEFAULT 0,
+    blue_pips SMALLINT DEFAULT 0,
+    black_pips SMALLINT DEFAULT 0,
+    red_pips SMALLINT DEFAULT 0,
+    green_pips SMALLINT DEFAULT 0,
+    colourless_pips SMALLINT DEFAULT 0
 );
 
 
