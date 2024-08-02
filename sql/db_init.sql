@@ -53,7 +53,9 @@ CREATE TABLE postgres.mtg.dim_commanders (
 CREATE TABLE postgres.mtg.fact_matches (
     match_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     match_date DATE DEFAULT NOW(),
-    players INT NOT NULL
+    players INT NOT NULL,
+    staging_matches_id INT,
+    CONSTRAINT fk_staging FOREIGN KEY(staging_matches_id) REFERENCES mtg.fact_staging_matches(staging_matches_id)
 );
 
 
@@ -90,6 +92,7 @@ are, I'll just edit the DB manually as and
 when that occurs.*/
 
 CREATE TABLE postgres.mtg.fact_staging_matches (
+    staging_matches_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- Makes downstream operations easier
     match_date DATE DEFAULT NOW(),
     player_one_name VARCHAR(40) NOT NULL,
     player_one_commander VARCHAR(80) NOT NULL,
