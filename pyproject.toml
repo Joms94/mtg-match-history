@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "mtg-match-history"
+version = "0.1.0"
+description = "Configures and manages a Magic: the Gathering match history database and associated data visualisations."
+authors = ["James Davis"]
+license = "MIT License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+
+
+[tool.poetry.group.prod.dependencies]
+pandas = "^2.2.3"
+python-dotenv = "^1.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
