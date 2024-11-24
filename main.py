@@ -7,6 +7,7 @@ import ast
 from dotenv import load_dotenv
 
 from src.gsheets_interaction import GoogleSheet
+from src.etl import reformat_api_values
 
 
 def init() -> dict:
@@ -26,7 +27,8 @@ def main():
     """Get result from Google API."""
     config = init()
     sheet = GoogleSheet(config["CREDS_FPATH"], config["SCOPES"])
-    print(sheet.get_data(config["GSHEET_ID"], config["RANGE_NAME"]))
+    data = sheet.get_data(config["GSHEET_ID"], config["RANGE_NAME"])
+    return reformat_api_values(data["values"])
 
 
 if __name__ == "__main__":
