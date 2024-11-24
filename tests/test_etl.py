@@ -4,7 +4,7 @@ both input data from Google Sheets and match
 data already in the database."""
 
 
-from src.etl import reformat_api_values
+from src.data_cleaning import reformat_api_values
 
 
 def test_reformat_values_dict(api_values):

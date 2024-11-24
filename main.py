@@ -7,7 +7,7 @@ import ast
 from dotenv import load_dotenv
 
 from src.gsheets_interaction import GoogleSheet
-from src.etl import reformat_api_values
+from src.data_cleaning import reformat_api_values
 
 
 def init() -> dict:

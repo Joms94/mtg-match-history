@@ -1,22 +1,20 @@
-"""Module responsible for cleaning and heavy-handed
-transformations, both of raw data and post-processed
-data from databases."""
-
+"""Module responsible for cleaning data
+from Google Sheets and databases."""
 
 from collections import defaultdict
 
 
 def reformat_api_values(data: list[list[str]]) -> dict[str, list[str]]:
     """Designed to clean data returned by the
-    Google Cloud API. The 'values' portion 
+    Google Cloud API. The 'values' portion
     of the dictionary typically returned is
     structured as a list of lists, with the
     first list being the header row.
-    
+
     Returns a dictionary of column headers as
     keys and lists as values (rows), with each
     element representing a cell in that row.
-    
+
     Purpose is to make it easier to work with
     this data in future. E.g., passing it to
     DataFrames."""
