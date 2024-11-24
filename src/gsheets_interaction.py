@@ -3,7 +3,7 @@ API connections, pulling sheet data, then coercing
 it into a more useable format."""
 
 
-from googleapiclient.discovery import build, Resource
+from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
 
@@ -24,7 +24,7 @@ class GoogleSheet:
         self.scopes = scopes
         self.creds = Credentials.from_service_account_file(creds_fpath, scopes=scopes)
 
-    def get_data(self, gsheet_id: str, range_name: str) -> dict[str, list[]]:
+    def get_data(self, gsheet_id: str, range_name: str) -> dict[str, list[str]]:
         """Extract data from a sheet in your
         Google Sheets workbook..
         

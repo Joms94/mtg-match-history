@@ -28,7 +28,7 @@ def main():
     config = init()
     sheet = GoogleSheet(config["CREDS_FPATH"], config["SCOPES"])
     data = sheet.get_data(config["GSHEET_ID"], config["RANGE_NAME"])
-    return reformat_api_values(data["values"])
+    print(reformat_api_values(data["values"]))
 
 
 if __name__ == "__main__":
