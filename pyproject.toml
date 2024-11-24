@@ -9,14 +9,35 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 
-
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
-
 
 [tool.poetry.group.prod.dependencies]
 pandas = "^2.2.3"
 python-dotenv = "^1.0.1"
+google-api-python-client = "^2.154.0"
+google-auth-httplib2 = "^0.2.0"
+google-auth-oauthlib = "^1.2.1"
+black = "^24.10.0"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+unstable = false
 
 [build-system]
 requires = ["poetry-core"]
