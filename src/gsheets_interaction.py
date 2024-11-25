@@ -18,7 +18,7 @@ class GoogleSheet:
     this still seems necessary. For more info:
     https://developers.google.com/identity/protocols/oauth2/scopes"""
 
-    def __init__(self, creds_fpath: str, scopes: str) -> None:
+    def __init__(self, creds_fpath: str, scopes: list[str]) -> None:
         self.creds_fpath = creds_fpath
         self.scopes = scopes
         self.creds = Credentials.from_service_account_file(creds_fpath, scopes=scopes)
