@@ -8,7 +8,7 @@ import pytest
 
 
 @pytest.fixture
-def api_values() -> list[list[str]]:
+def google_api_values() -> list[list[str]]:
     """Returns test values in the style of
     Google Cloud's API when the 'values'
     key is accessed.

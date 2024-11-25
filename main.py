@@ -12,14 +12,17 @@ from src.data_cleaning import reformat_api_values
 
 def init() -> dict:
     """Get environment variables. These are primarily
-    used to configure and use the Google Cloud API.
-    See gsheets_interaction.py for details."""
+    used to configure APIs."""
     load_dotenv()
     return {
+        # Google Sheets.
         "GSHEET_ID": os.getenv("GSHEET_ID"),
         "CREDS_FPATH": os.getenv("CREDS_FPATH"),
         "RANGE_NAME": os.getenv("RANGE_NAME"),
-        "SCOPES": ast.literal_eval(os.getenv("SCOPES"))
+        "SCOPES": ast.literal_eval(os.getenv("SCOPES")),
+        # Cloud Postgres instance.
+        "SUPABASE_URL": os.getenv("SUPABASE_URL"),
+        "SUPABASE_KEY": os.getenv("SUPABASE_KEY")
     }
 
 
