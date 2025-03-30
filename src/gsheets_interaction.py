@@ -71,17 +71,21 @@ class GoogleSheet:
         structured as a list of lists, with the
         first list being the header row.
 
-        Overwrites `api_data` when called.
+        Overwrites `api_data` with a list
+        of dictionaries. Each dictionary is
+        a column header: value pair for every
+        column in the row.
 
         Purpose is to trivialise an otherwise-
         difficult cleaning operation were I
         to load the json raw into a staging
         table and transform using pure SQL."""
-        cleaned_data = defaultdict(list)
-        api_values = self.api_data["values"]
-        for col_ind, col in enumerate(api_values[0]):  # Iterate over headers.
-            cleaned_data[col] += [row[col_ind] for row in api_values[1:]]
-        self.api_data = dict(cleaned_data)
+        data = self.api_data["values"]
+        row_data = []
+        headers = [data[0]]*(data_len:=len(data[1:])) # List of headers for each row.
+        for row in range(data_len):
+            row_data.append(dict(zip(headers[row], data[1:][row])))
+        self.api_data = row_data
 
     def write_api_values(self, output_fname: str = "gsheet_values.json") -> None:
         """Write Google API data to a .json file for
