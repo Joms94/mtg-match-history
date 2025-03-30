@@ -15,6 +15,9 @@ GCREDS = "GOOGLE_CREDS_FPATH"
 GRANGE = "RANGE_NAME"
 SCOPES = "SCOPES"
 
+# Local constants for other uses.
+JSON_FNAME = "gsheet_values.json"
+
 
 def init() -> dict:
     """Get environment variables. These are primarily
@@ -36,8 +39,13 @@ def init() -> dict:
 def main():
     """Get result from Google API."""
     config = init()
-    sheet = GoogleSheet(creds_fpath=config[GCREDS], scopes=config[SCOPES])
-    sheet.get_data(gsheet_id=config[GSHEET], data_range=config[GRANGE])
+    sheet = GoogleSheet(
+        creds_fpath=config[GCREDS],
+        scopes=config[SCOPES],
+        gsheet_id=config[GSHEET],
+        data_range=config[GRANGE],
+    )
+    sheet.get_data(output_fname=JSON_FNAME)
 
 
 if __name__ == "__main__":
