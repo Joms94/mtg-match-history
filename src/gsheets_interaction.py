@@ -1,6 +1,8 @@
 """Module responsible for configuring Google Cloud
 API connections and pulling sheet data."""
 
+import json
+
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
@@ -23,25 +25,29 @@ class GoogleSheet:
         self.scopes = scopes
         self.creds = Credentials.from_service_account_file(creds_fpath, scopes=scopes)
 
-    def get_data(self, gsheet_id: str, range_name: str) -> dict[str, list[str]]:
+    def get_data(self, gsheet_id: str, data_range: str) -> dict[str, list[str]]:
         """Extract data from a sheet in your
-        Google Sheets workbook.
+        Google Sheets workbook to json.
 
-        range_name: The name of a range specified
+        gsheet_id: There's a jumble of characters
+        in the URL for every GSheet between '/d/'
+        and '/edit'. This is your gsheet_id.
+
+        data_range: The name of a range specified
         in the same manner as you would within
         a typical Sheets formula. E.g., if you
         were trying to access the first column
         and first 10 rows of a sheet, this might
         be Sheet1!A1:A10, substituting 'Sheet1'
-        with your actual sheet name.
-
-        gsheet_id: There's a jumble of characters
-        in the URL for every GSheet between '/d/'
-        and '/edit'. This is your gsheet_id."""
+        with your actual sheet name."""
         with build("sheets", "v4", credentials=self.creds) as service:
-            return (
-                service.spreadsheets()
-                .values()
-                .get(spreadsheetId=gsheet_id, range=range_name)
-                .execute()
-            )
+            with open("gsheet_output.json", mode="w+", encoding="utf-8") as output_file:
+                json.dump(
+                    (
+                        service.spreadsheets()
+                        .values()
+                        .get(spreadsheetId=gsheet_id, range=data_range)
+                        .execute()
+                    ),
+                    output_file,
+                )
