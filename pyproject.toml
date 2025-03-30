@@ -5,6 +5,7 @@ description = "Configures and manages a Magic: the Gathering match history datab
 authors = ["James Davis"]
 license = "MIT License"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"

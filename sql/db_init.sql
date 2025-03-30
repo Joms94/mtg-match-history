@@ -16,92 +16,100 @@ that enrich the facts.*/
 
 CREATE SCHEMA IF NOT EXISTS mtg;
 
-DROP TABLE IF EXISTS postgres.mtg.fact_match_detail;
-DROP TABLE IF EXISTS postgres.mtg.fact_matches;
-DROP TABLE IF EXISTS postgres.mtg.fact_staging_matches;
-DROP TABLE IF EXISTS postgres.mtg.dim_commanders;
-DROP TABLE IF EXISTS postgres.mtg.dim_players;
+GRANT USAGE ON SCHEMA mtg TO anon; -- Careful when this isn't 'service_role'.
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA mtg TO anon;
+
+CREATE OR REPLACE PROCEDURE postgres.mtg.reinitialise_tables()
+LANGUAGE plpgSQL AS $$
+    BEGIN
+        DROP TABLE IF EXISTS postgres.mtg.fact_match_detail;
+        DROP TABLE IF EXISTS postgres.mtg.fact_matches;
+        DROP TABLE IF EXISTS postgres.mtg.fact_staging_matches;
+        DROP TABLE IF EXISTS postgres.mtg.dim_commanders;
+        DROP TABLE IF EXISTS postgres.mtg.dim_players;
 
 
-/* Stores basic information on each player.*/
+        /* Table for storing raw input data before being
+        assigned to appropriate tables.
 
-CREATE TABLE postgres.mtg.dim_players (
-    player_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    player_name VARCHAR(40) NOT NULL,
-    alias VARCHAR(40) -- For public data vis.
-);
+        I keep my match history in a spreadsheet, but
+        it's structured for input convenience rather than
+        analysis. Change the layout of this table to suit
+        how you're currently storing your input data.
 
+        My input spreadsheet doesn't accommodate for
+        more than four players, or more than one winner.
+        However, given how rare either of those things
+        are, I'll just edit the DB manually as and
+        when that occurs.*/
 
-/* Stores commander information, such as
-the commander's name and their colour identity.*/
-
-CREATE TABLE postgres.mtg.dim_commanders (
-    commander_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    commander_name VARCHAR(80) NOT NULL,
-    cost SMALLINT,
-    white_pips SMALLINT DEFAULT 0,
-    blue_pips SMALLINT DEFAULT 0,
-    black_pips SMALLINT DEFAULT 0,
-    red_pips SMALLINT DEFAULT 0,
-    green_pips SMALLINT DEFAULT 0,
-    colourless_pips SMALLINT DEFAULT 0
-);
-
-
-/* Stores a row for each match.*/
-
-CREATE TABLE postgres.mtg.fact_matches (
-    match_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    match_date DATE DEFAULT NOW(),
-    players INT NOT NULL,
-    staging_matches_id INT,
-    CONSTRAINT fk_staging FOREIGN KEY(staging_matches_id) REFERENCES mtg.fact_staging_matches(staging_matches_id)
-);
+        CREATE TABLE postgres.mtg.fact_staging_matches (
+            staging_matches_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- Makes downstream operations easier
+            match_date DATE DEFAULT NOW(),
+            player_one_name VARCHAR(40) NOT NULL,
+            player_one_commander VARCHAR(80) NOT NULL,
+            player_two_name VARCHAR(40) NOT NULL,
+            player_two_commander VARCHAR(80) NOT NULL,
+            player_three_name VARCHAR(40),
+            player_three_commander VARCHAR(80),
+            player_four_name VARCHAR(40),
+            player_four_commander VARCHAR(80),
+            winner_name VARCHAR(40),
+            winner_commander VARCHAR(80)
+        );
 
 
-/* Stores a row for each player in the match and
-whether or not they won.
-Accommodates for oddball games of two-headed giant
-where you might have two winners, or games that have
-more or less than four players.*/
+        /* Stores basic information on each player.*/
 
-CREATE TABLE postgres.mtg.fact_match_detail (
-    match_detail_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- Unique to the row.
-    match_id INT NOT NULL, -- Unique to the match.
-    player_id INT NOT NULL,
-    commander_id INT NOT NULL,
-    is_winner BOOLEAN DEFAULT FALSE,
-    CONSTRAINT fk_match FOREIGN KEY(match_id) REFERENCES mtg.fact_matches(match_id),
-    CONSTRAINT fk_player FOREIGN KEY(player_id) REFERENCES mtg.dim_players(player_id),
-    CONSTRAINT fk_commander FOREIGN KEY(commander_id) REFERENCES mtg.dim_commanders(commander_id)
-);
+        CREATE TABLE postgres.mtg.dim_players (
+            player_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+            player_name VARCHAR(40) NOT NULL,
+            alias VARCHAR(40) -- For public data vis.
+        );
 
 
-/* Table for storing raw input data before being
-assigned to appropriate tables.
+        /* Stores commander information, such as
+        the commander's name and their colour identity.*/
 
-I keep my match history in a spreadsheet, but
-it's structured for input convenience rather than
-analysis. Change the layout of this table to suit
-how you're currently storing your input data.
+        CREATE TABLE postgres.mtg.dim_commanders (
+            commander_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+            commander_name VARCHAR(80) NOT NULL,
+            cost SMALLINT,
+            white_pips SMALLINT DEFAULT 0,
+            blue_pips SMALLINT DEFAULT 0,
+            black_pips SMALLINT DEFAULT 0,
+            red_pips SMALLINT DEFAULT 0,
+            green_pips SMALLINT DEFAULT 0,
+            colourless_pips SMALLINT DEFAULT 0
+        );
 
-My input spreadsheet doesn't accommodate for
-more than four players, or more than one winner.
-However, given how rare either of those things
-are, I'll just edit the DB manually as and
-when that occurs.*/
 
-CREATE TABLE postgres.mtg.fact_staging_matches (
-    staging_matches_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- Makes downstream operations easier
-    match_date DATE DEFAULT NOW(),
-    player_one_name VARCHAR(40) NOT NULL,
-    player_one_commander VARCHAR(80) NOT NULL,
-    player_two_name VARCHAR(40) NOT NULL,
-    player_two_commander VARCHAR(80) NOT NULL,
-    player_three_name VARCHAR(40),
-    player_three_commander VARCHAR(80),
-    player_four_name VARCHAR(40),
-    player_four_commander VARCHAR(80),
-    winner_name VARCHAR(40),
-    winner_commander VARCHAR(80)
-);
+        /* Stores a row for each match.*/
+
+        CREATE TABLE postgres.mtg.fact_matches (
+            match_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+            match_date DATE DEFAULT NOW(),
+            players INT NOT NULL,
+            staging_matches_id INT,
+            CONSTRAINT fk_staging FOREIGN KEY(staging_matches_id) REFERENCES postgres.mtg.fact_staging_matches(staging_matches_id)
+        );
+
+
+        /* Stores a row for each player in the match and
+        whether or not they won.
+        Accommodates for oddball games of two-headed giant
+        where you might have two winners, or games that have
+        more or less than four players.*/
+
+        CREATE TABLE postgres.mtg.fact_match_detail (
+            match_detail_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, -- Unique to the row.
+            match_id INT NOT NULL, -- Unique to the match.
+            player_id INT NOT NULL,
+            commander_id INT NOT NULL,
+            is_winner BOOLEAN DEFAULT FALSE,
+            CONSTRAINT fk_match FOREIGN KEY(match_id) REFERENCES mtg.fact_matches(match_id),
+            CONSTRAINT fk_player FOREIGN KEY(player_id) REFERENCES mtg.dim_players(player_id),
+            CONSTRAINT fk_commander FOREIGN KEY(commander_id) REFERENCES mtg.dim_commanders(commander_id)
+        );
+    END;
+$$;

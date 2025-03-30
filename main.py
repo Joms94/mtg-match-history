@@ -7,7 +7,8 @@ import ast
 from dotenv import load_dotenv
 
 from src.gsheets_interaction import GoogleSheet
-from src.data_cleaning import reformat_api_values
+from src.data_cleaning import reformat_api_values_for_postgres
+from src.postgres_interaction import PostgresDB
 
 
 def init() -> dict:
@@ -17,7 +18,7 @@ def init() -> dict:
     return {
         # Google Sheets.
         "GSHEET_ID": os.getenv("GSHEET_ID"),
-        "CREDS_FPATH": os.getenv("CREDS_FPATH"),
+        "GOOGLE_CREDS_FPATH": os.getenv("GOOGLE_CREDS_FPATH"),
         "RANGE_NAME": os.getenv("RANGE_NAME"),
         "SCOPES": ast.literal_eval(os.getenv("SCOPES")),
         # Cloud Postgres instance.
@@ -29,9 +30,14 @@ def init() -> dict:
 def main():
     """Get result from Google API."""
     config = init()
-    sheet = GoogleSheet(config["CREDS_FPATH"], config["SCOPES"])
-    data = sheet.get_data(config["GSHEET_ID"], config["RANGE_NAME"])
-    print(reformat_api_values(data["values"]))
+    # sheet = GoogleSheet(config["GOOGLE_CREDS_FPATH"], config["SCOPES"])
+    # data = sheet.get_data(config["GSHEET_ID"], config["RANGE_NAME"])
+    # cleaned_data = reformat_api_values_for_postgres(data["values"])
+    with open("gsheet_output.txt", mode="r", encoding="utf-8") as mock_data:
+        cleaned_data = ast.literal_eval(mock_data.read())
+    db = PostgresDB(url=config["SUPABASE_URL"], key=config["SUPABASE_KEY"])
+    db.insert_into_table(data=cleaned_data)
+    # print(db.reinitialise_tables())
 
 
 if __name__ == "__main__":
