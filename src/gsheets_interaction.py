@@ -2,7 +2,6 @@
 API connections and pulling sheet data."""
 
 import json
-from collections import defaultdict
 
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
@@ -73,7 +72,7 @@ class GoogleSheet:
 
         Overwrites `api_data` with a list
         of dictionaries. Each dictionary is
-        a column header: value pair for every
+        a {column header:value} pair for every
         column in the row.
 
         Purpose is to trivialise an otherwise-
