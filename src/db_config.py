@@ -5,7 +5,6 @@ against it."""
 import sys
 import io
 from dataclasses import dataclass
-from datetime import date
 from typing import Literal
 
 import duckdb
@@ -20,7 +19,7 @@ class Table:
     definitions and modifications. Think of this
     as a simple ORM.
 
-    tname: Name of the table in the specified database.
+    name: Name of the table in the specified database.
 
     cols_and_dtypes: A dictionary of
     {column name: datatype expressed as string} pairs
@@ -29,7 +28,7 @@ class Table:
     conversion specified here:
     https://duckdb.org/docs/stable/clients/python/conversion"""
 
-    tname: str
+    name: str
     cols_and_dtypes: dict[str, Literal["INT", "DATE", "VARCHAR", "DOUBLE", "BIT"]]
 
 
@@ -59,9 +58,9 @@ class Database:
         a Python list of dictionaries, with each dictionary
         representing a row of {column header: value} pairs."""
         self.con.sql(
-            f"""CREATE OR REPLACE TABLE {table.tname} AS
+            f"""CREATE OR REPLACE TABLE {table.name} AS
                     SELECT
-                        ROW_NUMBER() OVER () AS {table.tname}_id,
+                        ROW_NUMBER() OVER () AS {table.name}_id,
                         *,
                         current_date AS last_modified_date
                     FROM read_json_auto({json_fpath});"""
@@ -73,11 +72,18 @@ class Database:
 
         table: Table whose dtypes in the database will be
         coerced to those in this object."""
+        cols = (
+            self.con.sql(f"SELECT column_name FROM (SHOW {table.name})")
+            .to_df()
+            .loc[:, "column_name"]
+            .to_list()
+        )
         self.con.sql(
             "\n".join(
                 [
-                    f"ALTER TABLE {table.tname} ALTER {col_name} TYPE {dtype};"
+                    f"ALTER TABLE {table.name} ALTER {col_name} TYPE {dtype};"
                     for col_name, dtype in table.cols_and_dtypes.items()
+                    if col_name in cols
                 ]
             )
         )
@@ -85,13 +91,13 @@ class Database:
     def select_table(self, table: Table) -> None:
         """Display the truncated contents of a table.
 
-        tname: Name of table to view."""
-        self.con.sql(f"SELECT * FROM {table.tname};").show()
+        name: Name of table to view."""
+        self.con.sql(f"SELECT * FROM {table.name};").show()
 
 
 if __name__ == "__main__":
     staging = Table(
-        tname="staging_matches", cols_and_dtypes={"match_date": "DATE", "pod_id": "INT"}
+        name="staging_matches", cols_and_dtypes={"match_date": "DATE", "pod_id": "INT"}
     )
     db = Database("mtg_stats.db")
     db.init_table(table=staging, json_fpath="gsheet_values.json")
