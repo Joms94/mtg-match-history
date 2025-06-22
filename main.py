@@ -72,7 +72,7 @@ def main():
         watermark_col=watermark, # Used to determine if a record is new or not.
     )
     db = Database("mtg_stats.db")
-    db.init_table(table=staging, force_drop=True)
+    db.init_table(table=staging)
     db.upsert_table(table=staging, json_fpath=JSON_FNAME)
     db.select_table(table=staging)
 

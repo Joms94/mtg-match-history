@@ -42,19 +42,7 @@ class GoogleSheet:
 
     def query_api(self) -> None:
         """Get data and metadata from the Google
-        API based on various parameters.
-
-        gsheet_id: There's a jumble of characters
-        in the URL for every GSheet between '/d/'
-        and '/edit'. This is your gsheet_id.
-
-        data_range: The name of a range specified
-        in the same manner as you would within
-        a typical Sheets formula. E.g., if you
-        were trying to access the first column
-        and first 10 rows of a sheet, this might
-        be Sheet1!A1:A10, substituting 'Sheet1'
-        with your actual sheet name."""
+        API based on various parameters."""
         with build("sheets", "v4", credentials=self.creds) as service:
             self.api_data = (
                 service.spreadsheets()
@@ -63,7 +51,7 @@ class GoogleSheet:
                 .execute()
             )
 
-    def clean_api_values(self) -> None:
+    def _clean_api_values(self) -> None:
         """Designed to clean data returned by the
         Google Cloud API. The 'values' portion
         of the dictionary returned is
@@ -88,7 +76,7 @@ class GoogleSheet:
 
     def write_api_values(self, output_fname: str = "gsheet_values.json") -> None:
         """Write Google API data to a .json file for
-        use in later database operations."""
+        use in later database operations or diagnostics."""
         with open(output_fname, mode="w+", encoding="utf-8") as output_file:
             json.dump(self.api_data, output_file)
 
@@ -111,5 +99,5 @@ class GoogleSheet:
         serves it up."""
         self.query_api()
         if clean:
-            self.clean_api_values()
+            self._clean_api_values()
         self.write_api_values(output_fname=output_fname)
