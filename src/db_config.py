@@ -26,14 +26,24 @@ class Table:
     to be used in data type coercion. If a column doesn't
     exist, it's skipped. Uses the Python -> DuckDB object
     conversion specified here:
-    https://duckdb.org/docs/stable/clients/python/conversion"""
+    https://duckdb.org/docs/stable/clients/python/conversion
+
+    watermark_col: Date column used to distinguish old records
+    from new."""
 
     name: str
-    cols_and_dtypes: dict[str, Literal["INT", "DATE", "VARCHAR", "DOUBLE", "BIT"]]
+    cols_and_dtypes: dict[
+        str, Literal["INT", "DATE", "VARCHAR", "DOUBLE", "BIT"]
+    ]
+    watermark_col: str
 
 
 class Database:
-    """Handles DuckDB database connections and operations."""
+    """Handles DuckDB database connections and operations.
+
+    Please note: this was written for a local personal project.
+    Security liberties have been taken. For instance,
+    queries in these methods are not parameterisied properly."""
 
     def __init__(self, db_name: str) -> None:
         sys.stdout = io.TextIOWrapper(
@@ -42,50 +52,50 @@ class Database:
         self.db_name = db_name
         self.con = duckdb.connect(db_name)
 
-    def init_table(self, table: Table, json_fpath: str) -> None:
+    def init_table(self, table: Table, force_drop: bool = False) -> None:
         """Create a table based on the contents of a json file.
-        If a table by the name you've specified exists, drop
-        that cheeky bugger, make a new one, then insert into it.
+        If a table by the name you've specified exists, do nothing.
+        Creates sequences to produce auto-incrementing primary keys
+        and watermarks.
 
-        table: Object containing table information. This method
-        only cares about the table name, which is used both
-        to create or drop the table, and define the ID column
-        name.
+        table: Object containing table information. Used to create
+        the table if it doesn't already exist
 
-        json_fpath: Path to json from which you'll pull data.
-        Test json files have normally been unorthodox (read:
-        not quite json) in that they've been structured like
-        a Python list of dictionaries, with each dictionary
-        representing a row of {column header: value} pairs."""
-        self.con.sql(
-            f"""CREATE OR REPLACE TABLE {table.name} AS
-                    SELECT
-                        ROW_NUMBER() OVER () AS {table.name}_id,
-                        *,
-                        current_date AS last_modified_date
-                    FROM read_json_auto({json_fpath});"""
-        )
-
-    def coerce_dtypes(self, table: Table) -> None:
-        """Coerce various columns in a DuckDB table to the
-        types you'd like them to be.
-
-        table: Table whose dtypes in the database will be
-        coerced to those in this object."""
-        cols = (
-            self.con.sql(f"SELECT column_name FROM (SHOW {table.name})")
-            .to_df()
-            .loc[:, "column_name"]
-            .to_list()
-        )
-        self.con.sql(
-            "\n".join(
-                [
-                    f"ALTER TABLE {table.name} ALTER {col_name} TYPE {dtype};"
-                    for col_name, dtype in table.cols_and_dtypes.items()
-                    if col_name in cols
-                ]
+        force_drop: Drop the table without question. Used when
+        the underlying schema of the source data changes and
+        the table needs to reflect that."""
+        if force_drop:
+            self.con.sql(
+                f"""DROP TABLE IF EXISTS {table.name};
+                DROP SEQUENCE IF EXISTS id_sequence;"""
             )
+
+        self.con.sql(
+            f"""
+            CREATE SEQUENCE IF NOT EXISTS id_sequence START 1;
+
+            CREATE TABLE IF NOT EXISTS {table.name} (
+                {table.name}_id INT PRIMARY KEY DEFAULT nextval('id_sequence'),
+                {",".join((col + " " + dtype) for col, dtype in table.cols_and_dtypes.items())},
+                last_modified TIMESTAMP_S DEFAULT current_localtimestamp()
+            );
+            """
+        )
+
+    def upsert_table(self, table: Table, json_fpath: str) -> None:
+        """Inserts new records and updates old ones
+        in the specified table."""
+        self.con.sql(
+            f"""
+            INSERT OR REPLACE INTO {table.name} (
+                {(cols:=",".join(table.cols_and_dtypes.keys()))}
+            )
+                SELECT {cols}
+                FROM read_json_auto({json_fpath})
+                WHERE {table.watermark_col} > (
+                    SELECT COALESCE(MAX({table.watermark_col}), '1900-01-01') FROM {table.name}
+                )
+            """
         )
 
     def select_table(self, table: Table) -> None:
@@ -93,13 +103,3 @@ class Database:
 
         name: Name of table to view."""
         self.con.sql(f"SELECT * FROM {table.name};").show()
-
-
-if __name__ == "__main__":
-    staging = Table(
-        name="staging_matches", cols_and_dtypes={"match_date": "DATE", "pod_id": "INT"}
-    )
-    db = Database("mtg_stats.db")
-    db.init_table(table=staging, json_fpath="gsheet_values.json")
-    db.coerce_dtypes(table=staging)
-    db.select_table(table=staging)
